@@ -29,7 +29,7 @@ NAME, COMMENT = range(2)
 
 TEXT = {
     "ru": {
-        "lang_title": ",
+        "lang_title":"🌐 ",
         "menu": "Продолжаем!",
         "apply": "📝 Оставить заявку",
         "change_lang": "🌐 Язык",
@@ -39,7 +39,7 @@ TEXT = {
         "lead": "📩 Новая заявка",
     },
     "uz": {
-        "lang_title": "",
+        "lang_title": "🌐",
         "menu": "Davom ettiramiz!",
         "apply": "📝 Ariza qoldirish",
         "change_lang": "🌐 Til",
@@ -49,7 +49,7 @@ TEXT = {
         "lead": "📩 Yangi ariza",
     },
     "en": {
-        "lang_title": "",
+        "lang_title": "🌐",
         "menu": "Let’s continue!",
         "apply": "📝 Submit request",
         "change_lang": "🌐 Language",
@@ -191,4 +191,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
