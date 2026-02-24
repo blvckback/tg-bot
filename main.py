@@ -1,6 +1,8 @@
-# bot.py
+# main.py
 # pip install python-telegram-bot==21.6
 
+import os
+import asyncio
 from datetime import datetime
 from telegram import (
     Update,
@@ -19,8 +21,9 @@ from telegram.ext import (
     filters,
 )
 
-TOKEN = "8651685744:AAG6xvdCp3a6LmsRwKI3gBo7s6EF8lE5bqU"
-ADMIN_GROUP_CHAT_ID = -5136004625  # <-- your admin group id
+# 🔐 Use Render Environment Variables
+TOKEN = os.getenv("TOKEN")
+ADMIN_GROUP_CHAT_ID = int(os.getenv("ADMIN_GROUP_CHAT_ID"))
 
 NAME, COMMENT = range(2)
 
@@ -81,16 +84,16 @@ def main_menu(lang):
     )
 
 
-# -------- START --------
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data.setdefault("lang", "ru")
+    lang = context.user_data["lang"]
+
     await update.message.reply_text(
-        t(context.user_data["lang"], "lang_title"),
-        reply_markup=language_bar(context.user_data.get("lang")),
+        t(lang, "lang_title"),
+        reply_markup=language_bar(lang),
     )
 
 
-# -------- LANGUAGE BUTTONS --------
 async def change_language(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -109,7 +112,6 @@ async def change_language(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
-# -------- MENU --------
 async def menu_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
     lang = context.user_data.get("lang", "ru")
     text = update.message.text
@@ -119,7 +121,7 @@ async def menu_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
             t(lang, "lang_title"),
             reply_markup=language_bar(lang),
         )
-        return
+        return ConversationHandler.END
 
     if text == t(lang, "apply"):
         await update.message.reply_text(
@@ -128,8 +130,9 @@ async def menu_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return NAME
 
+    return ConversationHandler.END
 
-# -------- FORM --------
+
 async def get_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["name"] = update.message.text
     lang = context.user_data.get("lang", "ru")
@@ -153,7 +156,10 @@ async def get_comment(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"👤 From: {username} (id: {user.id})"
     )
 
-    await context.bot.send_message(ADMIN_GROUP_CHAT_ID, admin_text)
+    await context.bot.send_message(
+        chat_id=ADMIN_GROUP_CHAT_ID,
+        text=admin_text
+    )
 
     await update.message.reply_text(
         t(lang, "thanks"),
@@ -164,8 +170,10 @@ async def get_comment(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 
-# -------- MAIN --------
-def main():
+async def main():
+    if not TOKEN:
+        raise RuntimeError("TOKEN not set in Render environment variables")
+
     app = Application.builder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
@@ -182,8 +190,8 @@ def main():
 
     app.add_handler(form_handler)
 
-    app.run_polling()
+    await app.run_polling()
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
