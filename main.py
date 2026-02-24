@@ -170,10 +170,7 @@ async def get_comment(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 
-async def main():
-    if not TOKEN:
-        raise RuntimeError("TOKEN not set in Render environment variables")
-
+def main():
     app = Application.builder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
@@ -187,12 +184,10 @@ async def main():
         },
         fallbacks=[],
     )
-
     app.add_handler(form_handler)
 
-    await app.run_polling()
+    app.run_polling()
 
 
 if __name__ == "__main__":
-    main(app.run_polling())
-
+    main()
