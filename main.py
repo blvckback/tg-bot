@@ -192,4 +192,21 @@ def main():
 if __name__ == "__main__":
     main()
 
+from flask import Flask
+import threading
+import os
+
+def run_web():
+    web = Flask(__name__)
+
+    @web.get("/")
+    def home():
+        return "OK"
+
+    port = int(os.environ.get("PORT", "10000"))
+    web.run(host="0.0.0.0", port=port)
+
+if __name__ == "__main__":
+    threading.Thread(target=run_web, daemon=True).start()
+    main()   # <-- твоя функция main() где app.run_polling()
 
