@@ -183,7 +183,7 @@ async def get_comment(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 # =========================
-# RUN BOT (polling)
+# RUN BOT
 # =========================
 def run_bot():
     app = Application.builder().token(TOKEN).build()
@@ -201,12 +201,12 @@ def run_bot():
     )
     app.add_handler(form_handler)
 
-    # IMPORTANT: Only one instance of bot must run (otherwise Conflict)
-    app.run_polling(close_loop=False)
+    print("BOT STARTING...")
+    app.run_polling()
 
 
 # =========================
-# WEB PORT (for Render Web Service)
+# WEB SERVER FOR RENDER
 # =========================
 def run_web():
     web = Flask(__name__)
@@ -220,9 +220,8 @@ def run_web():
 
 
 if __name__ == "__main__":
-    # Start web server in background (so Render sees open port)
-    threading.Thread(target=run_web, daemon=True).start()
+    # 1️⃣ сначала запускаем бота в отдельном потоке
+    threading.Thread(target=run_bot, daemon=True).start()
 
-    # Start bot polling
-    run_bot()
-
+    # 2️⃣ потом запускаем веб-сервер (главный поток)
+    run_web()
