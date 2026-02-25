@@ -43,7 +43,7 @@ NAME, COMMENT = range(2)
 TEXT = {
     "ru": {
         "lang_title": "Выберите язык / Tilni tanlang / Choose language",
-        "menu": "Меню:",
+        "menu": "Продолжаем!",
         "apply": "📝 Оставить заявку",
         "change_lang": "🌐 Язык",
         "ask_name": "Как вас зовут?",
@@ -53,7 +53,7 @@ TEXT = {
     },
     "uz": {
         "lang_title": "🌐 Tilni tanlang",
-        "menu": "Menyu:",
+        "menu": "Davom ettiramiz!",
         "apply": "📝 Ariza qoldirish",
         "change_lang": "🌐 Til",
         "ask_name": "Ismingiz?",
@@ -63,7 +63,7 @@ TEXT = {
     },
     "en": {
         "lang_title": "🌐 Choose language",
-        "menu": "Menu:",
+        "menu": "Let’s continue!",
         "apply": "📝 Submit request",
         "change_lang": "🌐 Language",
         "ask_name": "Your name?",
@@ -225,3 +225,4 @@ if __name__ == "__main__":
 
     # Start bot polling
     run_bot()
+
