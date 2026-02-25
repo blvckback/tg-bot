@@ -1,9 +1,7 @@
-# main.py
-# pip install python-telegram-bot==21.6
-
 import os
-import asyncio
-from datetime import datetime
+import threading
+from flask import Flask
+
 from telegram import (
     Update,
     ReplyKeyboardMarkup,
@@ -21,16 +19,31 @@ from telegram.ext import (
     filters,
 )
 
-# 🔐 Use Render Environment Variables
+# =========================
+# ENV (Render -> Environment)
+# =========================
 TOKEN = os.getenv("TOKEN")
-ADMIN_GROUP_CHAT_ID = int(os.getenv("ADMIN_GROUP_CHAT_ID"))
+ADMIN_GROUP_CHAT_ID_RAW = os.getenv("ADMIN_GROUP_CHAT_ID")
 
+if not TOKEN:
+    raise RuntimeError("TOKEN is missing. Add it in Render Environment variables as TOKEN.")
+if not ADMIN_GROUP_CHAT_ID_RAW:
+    raise RuntimeError("ADMIN_GROUP_CHAT_ID is missing. Add it in Render Environment variables as ADMIN_GROUP_CHAT_ID.")
+
+ADMIN_GROUP_CHAT_ID = int(ADMIN_GROUP_CHAT_ID_RAW)
+
+# =========================
+# BOT STATES
+# =========================
 NAME, COMMENT = range(2)
 
+# =========================
+# TEXTS
+# =========================
 TEXT = {
     "ru": {
-        "lang_title":"🌐 ",
-        "menu": "Продолжаем!",
+        "lang_title": "Выберите язык / Tilni tanlang / Choose language",
+        "menu": "Меню:",
         "apply": "📝 Оставить заявку",
         "change_lang": "🌐 Язык",
         "ask_name": "Как вас зовут?",
@@ -39,8 +52,8 @@ TEXT = {
         "lead": "📩 Новая заявка",
     },
     "uz": {
-        "lang_title": "🌐",
-        "menu": "Davom ettiramiz!",
+        "lang_title": "🌐 Tilni tanlang",
+        "menu": "Menyu:",
         "apply": "📝 Ariza qoldirish",
         "change_lang": "🌐 Til",
         "ask_name": "Ismingiz?",
@@ -49,8 +62,8 @@ TEXT = {
         "lead": "📩 Yangi ariza",
     },
     "en": {
-        "lang_title": "🌐",
-        "menu": "Let’s continue!",
+        "lang_title": "🌐 Choose language",
+        "menu": "Menu:",
         "apply": "📝 Submit request",
         "change_lang": "🌐 Language",
         "ask_name": "Your name?",
@@ -84,10 +97,12 @@ def main_menu(lang):
     )
 
 
+# =========================
+# BOT HANDLERS
+# =========================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data.setdefault("lang", "ru")
     lang = context.user_data["lang"]
-
     await update.message.reply_text(
         t(lang, "lang_title"),
         reply_markup=language_bar(lang),
@@ -114,7 +129,7 @@ async def change_language(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def menu_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
     lang = context.user_data.get("lang", "ru")
-    text = update.message.text
+    text = (update.message.text or "").strip()
 
     if text == t(lang, "change_lang"):
         await update.message.reply_text(
@@ -134,7 +149,7 @@ async def menu_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def get_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data["name"] = update.message.text
+    context.user_data["name"] = (update.message.text or "").strip()
     lang = context.user_data.get("lang", "ru")
     await update.message.reply_text(t(lang, "ask_comment"))
     return COMMENT
@@ -142,8 +157,8 @@ async def get_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def get_comment(update: Update, context: ContextTypes.DEFAULT_TYPE):
     lang = context.user_data.get("lang", "ru")
-    name = context.user_data.get("name")
-    comment = update.message.text
+    name = context.user_data.get("name", "").strip()
+    comment = (update.message.text or "").strip()
 
     user = update.effective_user
     username = f"@{user.username}" if user.username else "no_username"
@@ -156,10 +171,7 @@ async def get_comment(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"👤 From: {username} (id: {user.id})"
     )
 
-    await context.bot.send_message(
-        chat_id=ADMIN_GROUP_CHAT_ID,
-        text=admin_text
-    )
+    await context.bot.send_message(chat_id=ADMIN_GROUP_CHAT_ID, text=admin_text)
 
     await update.message.reply_text(
         t(lang, "thanks"),
@@ -170,7 +182,10 @@ async def get_comment(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 
-def main():
+# =========================
+# RUN BOT (polling)
+# =========================
+def run_bot():
     app = Application.builder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
@@ -186,16 +201,13 @@ def main():
     )
     app.add_handler(form_handler)
 
-    app.run_polling()
+    # IMPORTANT: Only one instance of bot must run (otherwise Conflict)
+    app.run_polling(close_loop=False)
 
 
-if __name__ == "__main__":
-    main()
-
-from flask import Flask
-import threading
-import os
-
+# =========================
+# WEB PORT (for Render Web Service)
+# =========================
 def run_web():
     web = Flask(__name__)
 
@@ -206,7 +218,10 @@ def run_web():
     port = int(os.environ.get("PORT", "10000"))
     web.run(host="0.0.0.0", port=port)
 
-if __name__ == "__main__":
-    threading.Thread(target=run_web, daemon=True).start()
-    main()   # <-- твоя функция main() где app.run_polling()
 
+if __name__ == "__main__":
+    # Start web server in background (so Render sees open port)
+    threading.Thread(target=run_web, daemon=True).start()
+
+    # Start bot polling
+    run_bot()
